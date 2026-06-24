@@ -3,6 +3,7 @@ SQLAlchemy async engine and session factory.
 Also registers the pgvector type.
 """
 
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     create_async_engine,
@@ -17,11 +18,11 @@ from config import settings
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    pool_size=10,
-    max_overflow=20,
+    poolclass=NullPool,
     connect_args={
-        "statement_cache_size": 0
-    }
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+    },
 )
 
 AsyncSessionLocal = async_sessionmaker(
