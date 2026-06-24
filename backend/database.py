@@ -2,16 +2,26 @@
 SQLAlchemy async engine and session factory.
 Also registers the pgvector type.
 """
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    create_async_engine,
+    async_sessionmaker,
+)
 from sqlalchemy.orm import DeclarativeBase
-from pgvector.sqlalchemy import Vector  # noqa: F401 — registers the type
+from sqlalchemy import text
+from pgvector.sqlalchemy import Vector  # noqa: F401
 from config import settings
+
 
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     pool_size=10,
     max_overflow=20,
+    connect_args={
+        "statement_cache_size": 0
+    }
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -37,10 +47,7 @@ async def get_db() -> AsyncSession:
 async def init_db():
     """Create all tables on startup (idempotent)."""
     async with engine.begin() as conn:
-        # Run raw SQL to ensure pgvector extension exists
         await conn.execute(
-            __import__("sqlalchemy").text(
-                "CREATE EXTENSION IF NOT EXISTS vector;"
-            )
+            text("CREATE EXTENSION IF NOT EXISTS vector;")
         )
         await conn.run_sync(Base.metadata.create_all)
